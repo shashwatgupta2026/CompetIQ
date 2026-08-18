@@ -8,9 +8,9 @@
 
 # \## What it does
 
-# CompetIQ tracks pricing pages for competing e-commerce brands (JBL, Bose, Soundcore), automatically detects changes, and will summarize what changed in plain English using AI.
+# CompetIQ tracks pricing pages for competing e-commerce brands (JBL, Bose, Skullcandy), automatically detects changes, and will summarize what changed in plain English using AI.
 
-# 
+
 
 # \## How Bright Data Scraper Studio is used
 
@@ -20,7 +20,7 @@
 
 # \## Self-healing proof
 
-# To test resilience, a local copy of JBL's page was modified (renaming the "price" field in the page's underlying data to "cost", simulating a real site redesign) and hosted publicly via GitHub Pages. The same JBL scraper was then run against this modified page, and Scraper Studio successfully re-derived the correct extraction — demonstrating it adapts to layout changes without manual fixes.
+# To test resilience, a local copy of JBL's page was modified (renaming the "price" field in the page's underlying data to "cost", simulating a real site redesign) and hosted publicly via GitHub Pages. The same JBL scraper was then run against this modified page. It successfully recovered pricing for products where price data existed outside the modified field, demonstrating partial self-healing — the scraper adapts and finds what data it still can, rather than failing completely.
 
 # 
 
