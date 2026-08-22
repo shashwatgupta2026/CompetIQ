@@ -19,11 +19,12 @@ type Snapshot = {
   scraped_at: string;
 };
 
-const COMPETITORS = ["jbl", "bose", "skullcandy"];
+const COMPETITORS = ["jbl", "bose", "skullcandy", "jlab"];
 const SOURCE_URLS: Record<string, string> = {
   jbl: "https://www.jbl.com/wireless-earbuds/",
   bose: "https://www.bose.com/p/earbuds/bose-quietcomfort-headphones/QCEARB24-HEADPHONEIN.html",
   skullcandy: "https://www.skullcandy.com/collections/sale-earbuds",
+  jlab: "https://www.jlabaudio.com/collections/true-wireless",
 };
 
 const NAV_ITEMS = [
