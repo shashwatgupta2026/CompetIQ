@@ -1,0 +1,168 @@
+const generateDrawerALA = () => {
+    let _shopify_locale = Shopify.locale;
+    let _shopify_country = Shopify.country;
+    let _affirm_locale;
+    let _affirm_country;
+
+    if (_shopify_country === 'US') {
+        _affirm_country = 'USA';
+        _affirm_locale = 'en_US';
+    } else if (_shopify_country === 'CA') {
+        _affirm_country = 'CAN';
+        _affirm_locale = (_shopify_locale === 'fr' ?  'fr' : 'en') + '_' + _shopify_country;
+    }
+
+    _affirm_config = {
+        public_api_key: affirmPublicApiKeyCartDrawer,
+        script: "https://cdn1.affirm.com/js/v2/affirm.js",
+        locale: _affirm_locale,
+        country_code: _affirm_country,
+    };
+
+    (function(l,g,m,e,a,f,b){var d,c=l[m]||{},h=document.createElement(f),n=document.getElementsByTagName(f)[0],k=function(a,b,c){return function(){a[b]._.push([c,arguments])}};c[e]=k(c,e,"set");d=c[e];c[a]={};c[a]._=[];d._=[];c[a][b]=k(c,a,b);a=0;for(b="set add save post open empty reset on off trigger ready setProduct".split(" ");a<b.length;a++)d[b[a]]=k(c,e,b[a]);a=0;for(b=["get","token","url","items"];a<b.length;a++)d[b[a]]=function(){};h.async=!0;h.src=g[f];n.parentNode.insertBefore(h,n);delete g[f];d(g);l[m]=c})(window,_affirm_config,"affirm","checkout","ui","script","ready");
+};
+
+async function fetchJsonDrawer(url) {
+    const response = await fetch(url);
+    return response.json();
+};
+
+const buildDrawerPromoElement = (promoConfig, totalValue) => {
+    var promoEl = document.createElement("div");
+	promoEl.className = "affirm-as-low-as";    
+	promoEl.dataset.amount = totalValue;
+	promoEl.dataset.affirmType = promoConfig.logoType;
+  	promoEl.dataset.pageType = promoConfig.pageType;
+    promoEl.dataset.affirmColor = promoConfig.logoColor;  
+    styleArray = [
+        "text-align: ", promoConfig.textAlign, 
+        "; font-size: ", promoConfig.fontSize,
+        "px; z-index: 100 !important; ",
+        "position: relative; ",
+        "margin-bottom: 1rem;"
+    ];
+    promoEl.style = styleArray.join("");
+  	return promoEl;
+}
+
+const getDrawerTotalFromElement = (totalValueElement) => {
+    const filterRegex = /[0-9]/g;
+    const totalValueArray = totalValueElement.innerHTML.match(filterRegex);
+    let totalValue = totalValueArray?.join("");
+    if (!totalValue) totalValue = '000'; 
+    return totalValue;
+}
+
+const getDrawerTotalUsingSelectors = (cartDrawerElement) => {
+    const totalValueElement = cartDrawerElement.querySelector(drawerTotalValueSelector);
+    if (!totalValueElement) {
+        console.log("Customize the Affirm Cart Drawer: Custom Cart Drawer Total Selector");
+        return; 
+    }
+    return getDrawerTotalFromElement(totalValueElement);
+}
+
+const updateDrawerAlaAmount = (newTotal, cartDrawerElement) => {
+    const promoSelector = '.affirm-as-low-as';
+    const promoElement = cartDrawerElement.querySelector(promoSelector);
+    if (!promoElement) return false;
+    promoElement.setAttribute('data-amount', newTotal);
+    if (affirm) {
+        affirm.ui.refresh();
+    }
+    return true;
+}
+
+const insertDrawerALA = (cartTotal, cartDrawerElement) => {
+    const adjacentElement = cartDrawerElement.querySelector(adjacentElementSelector);
+    if (!adjacentElement) {
+        console.log("Customize the Affirm Cart Drawer: Custom Adjacent Selector");
+        return;    
+    }
+    const drawerALA = buildDrawerPromoElement(promoConfig, cartTotal);
+    adjacentElement.insertAdjacentElement('beforeend', drawerALA);
+    affirm.ui.ready(function(){
+        affirm.ui.refresh();
+    });
+}
+
+const renderDrawerALA = () => {
+    setTimeout(() => {
+        const cartDrawerElement = document.querySelector(cartDrawerSelector);
+        if (!cartDrawerElement) {
+            console.log("Customize the Affirm Cart Drawer: Custom Cart Drawer Selector");
+            return;
+        }
+        let totalPriceDrawer;
+        // Shopify reference for url: https://shopify.dev/docs/api/ajax/reference/cart
+        const cartURL = Shopify.routes.root +'cart.js';
+        fetchJsonDrawer(cartURL)
+            .then((cart) => {
+                if (cart && cart.total_price)  {
+                    totalPriceDrawer = cart.total_price;
+                } else {
+                    totalPriceDrawer = getDrawerTotalUsingSelectors(cartDrawerElement);
+                }
+                if (!totalPriceDrawer) return;
+                const updated = updateDrawerAlaAmount(totalPriceDrawer, cartDrawerElement);
+                if (!updated) {
+                    insertDrawerALA(totalPriceDrawer, cartDrawerElement);    
+                }
+                return;
+            })
+            .catch((error) => {
+                console.log(error);
+                totalPriceDrawer = getDrawerTotalUsingSelectors(cartDrawerElement);
+                if (!totalPriceDrawer) return;
+                const updated = updateDrawerAlaAmount(totalPriceDrawer, cartDrawerElement);
+                if (!updated) {
+                    insertDrawerALA(totalPriceDrawer, cartDrawerElement);    
+                }
+                return;
+            })
+    }, 1100);
+}
+
+const defaultCartDrawerSelector = '#CartDrawer';
+const defaultDrawerTotalValueSelector = '.totals__subtotal-value, .totals__total-value';
+const defaultAdjacentElementSelector = '.cart-drawer__footer';
+const defaultAddToCartButtonSelector = '.product-form__submit.button';
+
+const cartDrawerSelector = customCartDrawerSelector ? customCartDrawerSelector : defaultCartDrawerSelector;
+const drawerTotalValueSelector = customDrawerTotalSelector ? customDrawerTotalSelector : defaultDrawerTotalValueSelector;
+const addToCartButtonSelector = customAddToCartSelector ? customAddToCartSelector : defaultAddToCartButtonSelector;
+const adjacentElementSelector = customAdjacentElementSelector ? customAdjacentElementSelector : defaultAdjacentElementSelector;
+
+
+if (affirmPublicApiKeyCartDrawer) {
+    let isValidToGenerate = false;
+    //  if "drawerPublicKey" is not null, "drawerPromoAppConfig.region_public_keys" exists
+    if (!publicKeyEntered && Shopify.currency.active == 'USD' && drawerPublicKey) {
+        if (affirmPublicApiKeyCartDrawer == drawerPromoAppConfig.region_public_keys.us) {
+            isValidToGenerate = true;
+        }
+    };
+    if (!publicKeyEntered && Shopify.currency.active == 'CAD' && drawerPublicKey) {
+        if (affirmPublicApiKeyCartDrawer == drawerPromoAppConfig.region_public_keys.ca) {
+            isValidToGenerate = true;
+        }
+    };
+    if (isValidToGenerate || publicKeyEntered) {
+        // adding an event listener to a cart-drawer
+        const cartDrawerElement = document.querySelector(cartDrawerSelector);
+        if (cartDrawerElement) {
+            generateDrawerALA();
+            renderDrawerALA();
+            cartDrawerElement.addEventListener('click', renderDrawerALA);
+            // in case of several "Add to Cart" buttons on a page
+            const addToCartButtonElements = document.querySelectorAll(addToCartButtonSelector);
+            if (addToCartButtonElements.length >= 1) {
+                addToCartButtonElements.forEach((button) => {
+                    button.addEventListener('click', renderDrawerALA);
+                })
+            }
+        } else {
+            console.log("Customize Affirm Cart Drawer: Custom Cart Drawer Selector");
+        }
+    }
+}
