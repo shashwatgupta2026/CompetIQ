@@ -18,7 +18,7 @@ Businesses want to track competitor pricing, but manual checking doesn't scale â
 
 \## What CompetIQ does
 
-Tracks pricing for 3 real e-commerce brands (JBL, Bose, Skullcandy) using Bright Data Scraper Studio, detects price changes automatically, summarizes them in plain English using NVIDIA NIM (Llama 3.3 70B), and displays everything on a live dashboard with an overview, timeline, competitor breakdown, and scraper health log.
+Tracks pricing for 5 real e-commerce brands (JBL, Bose, Skullcandy, Marley, JLab) using Bright Data Scraper Studio, detects price changes automatically, summarizes them in plain English using NVIDIA NIM (Llama 3.3 70B), and displays everything on a live dashboard with an overview, timeline, competitor breakdown, and scraper health log.
 
 
 
