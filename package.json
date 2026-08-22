@@ -1,0 +1,13 @@
+{
+  "name": "competiq",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "scrape:competitor1": "node scrape-competitor1.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
+    "openai": "^7.5.0"
+  }
+}
