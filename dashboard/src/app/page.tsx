@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Clock, BarChart3, Activity } from "lucide-react";
-
+import { Clock, BarChart3, Activity, LayoutDashboard } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 type Insight = {
   id: number;
   competitor: string;
@@ -27,13 +27,14 @@ const SOURCE_URLS: Record<string, string> = {
 };
 
 const NAV_ITEMS = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "timeline", label: "Timeline", icon: Clock },
   { key: "competitors", label: "Competitors", icon: BarChart3 },
   { key: "health", label: "Health", icon: Activity },
 ] as const;
 
 export default function Home() {
-  const [tab, setTab] = useState<"timeline" | "competitors" | "health">("timeline");
+  const [tab, setTab] = useState<"overview" | "timeline" | "competitors" | "health">("overview");
   const [insights, setInsights] = useState<Insight[]>([]);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,11 +77,21 @@ export default function Home() {
         <div className="mb-8 px-2">
           <h1 className="text-xl font-bold text-white">CompetIQ</h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Self-healing competitive intel
+            Watch competitors. Miss nothing.
           </p>
           <span className="inline-block mt-2 text-[10px] uppercase tracking-wide text-blue-400 bg-blue-500/10 px-2 py-1 rounded">
             Powered by Bright Data
           </span>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1.5">
+              <p className="text-[10px] text-neutral-500">Tracked</p>
+              <p className="text-sm text-white font-semibold">{COMPETITORS.length}</p>
+            </div>
+            <div className="bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1.5">
+              <p className="text-[10px] text-neutral-500">Self-heal</p>
+              <p className="text-sm text-green-400 font-semibold">Active</p>
+            </div>
+          </div>
         </div>
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map(({ key, label, icon: Icon }) => (
@@ -104,6 +115,45 @@ export default function Home() {
       <main className="flex-1 px-8 py-10 max-w-4xl">
         {loading && <p className="text-neutral-500">Loading...</p>}
 
+        {!loading && tab === "overview" && (
+          <div>
+            <h2 className="text-2xl font-semibold text-white mb-2">Overview</h2>
+            <p className="text-neutral-400 mb-8 max-w-xl">
+              CompetIQ watches competitor pricing pages, detects real changes,
+              and explains them in plain English using AI — and if a scraper
+              breaks when a site changes, it heals itself using Bright Data.
+            </p>
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                <p className="text-3xl font-bold text-white">{COMPETITORS.length}</p>
+                <p className="text-xs text-neutral-500 mt-1">Competitors tracked</p>
+              </div>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                <p className="text-3xl font-bold text-white">{snapshots.length}</p>
+                <p className="text-xs text-neutral-500 mt-1">Price checks logged</p>
+              </div>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                <p className="text-3xl font-bold text-green-400">100%</p>
+                <p className="text-xs text-neutral-500 mt-1">Scrapers active</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setTab("timeline")}
+                className="px-4 py-2 bg-blue-500/10 text-blue-400 rounded-md text-sm font-medium hover:bg-blue-500/20 transition"
+              >
+                View Timeline
+              </button>
+              <button
+                onClick={() => setTab("health")}
+                className="px-4 py-2 bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-md text-sm font-medium hover:bg-neutral-800 transition"
+              >
+                See Self-Healing Log
+              </button>
+            </div>
+          </div>
+        )}
+
         {!loading && tab === "timeline" && (
           <div>
             <h2 className="text-2xl font-semibold text-white mb-6">Timeline</h2>
@@ -126,7 +176,14 @@ export default function Home() {
                       {new Date(item.created_at).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-neutral-200">{item.summary}</p>
+                   <p className="text-neutral-200">{item.summary}</p>
+                  {item.summary.match(/\$[\d.]+/g) && item.summary.match(/\$[\d.]+/g)!.length >= 2 && (
+                    <div className="flex items-center gap-2 mt-2 text-sm font-mono">
+                      <span className="text-neutral-500">{item.summary.match(/\$[\d.]+/g)![0]}</span>
+                      <span className="text-neutral-600">→</span>
+                      <span className="text-blue-400 font-semibold">{item.summary.match(/\$[\d.]+/g)![1]}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -152,6 +209,36 @@ export default function Home() {
                   >
                     {SOURCE_URLS[name]}
                   </a>
+                  <div className="h-24 mb-3 -mx-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={(grouped[name] ?? [])
+                          .slice(0, 6)
+                          .reverse()
+                          .map((row) => ({
+                            name: row.product_name.slice(0, 10),
+                            price: parseFloat(row.price.replace(/[^0-9.]/g, "")) || 0,
+                          }))}
+                      >
+                        <XAxis dataKey="name" hide />
+                        <YAxis hide domain={["auto", "auto"]} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#171717",
+                            border: "1px solid #262626",
+                            fontSize: "12px",
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#60a5fa"
+                          strokeWidth={2}
+                          dot={{ fill: "#60a5fa", r: 3 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                   <div className="space-y-2">
                     {(grouped[name] ?? []).slice(0, 6).map((row) => (
                       <div
